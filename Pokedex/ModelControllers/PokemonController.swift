@@ -32,10 +32,12 @@ class PokemonController {
             // handle error
             if let error = error {
                 print(error, error.localizedDescription)
-                return completion(.failure(.communicationError))
+                
+                return completion(.failure(.thrownError(error)))
+                
+                //return completion(.failure(.communicationError))
             }
             
-            //unwrap the error
             guard let data = data else { return completion(.failure(.noData))}
             
             do {
@@ -44,13 +46,18 @@ class PokemonController {
                 return completion(.success(pokemon))
             } catch {
                 print(error, error.localizedDescription)
-                return completion(.failure(.unableToDecodeData))
+                //return completion(.failure(.unableToDecodeData))
+                return completion(.failure(.thrownError(error)))
             }
             
         }.resume()
         
     }
     
+    /// <#Description#>
+    /// - Parameters:
+    ///   - pokemon: <#pokemon description#>
+    ///   - completion: <#completion description#>
     static func fetchSprite(for pokemon: Pokemon, completion: @escaping(Result<UIImage, PokemonAPIError>) -> Void) {
         
         let url = pokemon.sprites.frontDefault
@@ -62,7 +69,7 @@ class PokemonController {
         URLSession.shared.dataTask(with: request) { (data, _, error ) in
             if let error = error {
                 print(error, error.localizedDescription)
-                return completion(.failure(.communicationError))
+                return completion(.failure(.thrownError(error)))
             }
             
             guard let data = data else { return completion(.failure(.noData)) }
@@ -79,7 +86,21 @@ class PokemonController {
 
 enum PokemonAPIError: LocalizedError {
     case invalidURL
-    case communicationError
     case noData
     case unableToDecodeData
+    case thrownError(Error)
+    
+    
+    var errorDescription: String? {
+        switch self {
+            case .invalidURL:
+            return "Unable to reach the server"
+            case .noData:
+            return "The server responded with no data"
+            case .unableToDecodeData:
+            return "the server responded with bad data"
+            case .thrownError(let error):
+                return "\(error.localizedDescription)"
+        }
+    }
 }
